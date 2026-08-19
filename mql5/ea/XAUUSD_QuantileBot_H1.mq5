@@ -297,14 +297,20 @@ void EnterLong(double sl_price, double tp_price)
    double vol_max  = SymbolInfoDouble(InpSymbol, SYMBOL_VOLUME_MAX);
    double vol_step = SymbolInfoDouble(InpSymbol, SYMBOL_VOLUME_STEP);
    double lots = MathFloor(raw_lots / vol_step) * vol_step;
-   lots = MathMax(vol_min, MathMin(vol_max, lots));
 
+   // BUG FIXED (caught in the demo dry-run, 2026-08-19): this used to clamp lots up to
+   // vol_min with MathMax *before* the "below minimum" check, so the check below was
+   // dead code and every under-sized trade silently traded the broker minimum anyway —
+   // measured 5.9% real risk on a 5%-intended trade with the $200 test account. Now the
+   // minimum-lot check runs on the floored (not yet clamped-up) size, so it actually
+   // refuses instead of silently oversizing.
    if(lots < vol_min)
      {
       Print("Computed lot size (", DoubleToString(raw_lots, 4), ") rounds below the broker minimum (",
-            vol_min, ") — refusing to oversize the trade by trading the minimum anyway. Skipping.");
+            vol_min, ") — trading the minimum anyway would risk more than InpRiskPct. Skipping.");
       return;
      }
+   lots = MathMin(vol_max, lots);
 
    Print("Entering LONG: equity=", DoubleToString(equity, 2), " risk_amount=", DoubleToString(risk_amount, 2),
          " sl_distance=", DoubleToString(sl_distance, 3), " lots=", DoubleToString(lots, 2),
