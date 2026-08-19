@@ -1,0 +1,39 @@
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Data — data/raw is the versioned source-of-truth dataset (committed to git per project
+# decision, monthly-partitioned Parquet keeps individual files small). raw_export/ and
+# processed/ stay ignored: raw_export is the not-yet-used MQL5 dump target, processed is
+# regenerable from raw + feature code.
+data/raw_export/*
+!data/raw_export/.gitkeep
+data/processed/*
+!data/processed/.gitkeep
+
+# Model artifacts
+models/checkpoints/*
+!models/checkpoints/.gitkeep
+onnx_export/*.onnx
+
+# MQL5 compiled binaries (source .mq5 is versioned, compiled .ex5 is not)
+mql5/**/*.ex5
+
+# OS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

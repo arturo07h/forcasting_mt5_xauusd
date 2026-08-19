@@ -1,0 +1,13 @@
+python-dotenv
+dukascopy-python
+pandas
+numpy
+pyarrow
+scipy
+scikit-learn
+statsmodels
+arch
+torch
+pyyaml
+matplotlib
+seaborn

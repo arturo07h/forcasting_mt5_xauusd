@@ -1,0 +1,14 @@
+symbol: XAUUSD          # resolve exact broker suffix (e.g. XAUUSD.a) before use — see ingestion/validators.py
+timeframe: M5
+
+horizon_candles: 12     # forecast horizon: N candles forward (~1h on M5)
+
+quantiles: [0.05, 0.10, 0.50, 0.90, 0.95]
+
+tp_sl:
+  tp_quantile: 0.90      # chosen empirically between 0.90 / 0.95 during walk-forward calibration (Phase 2, point 3)
+  sl_method: volatility   # SL derived from HAR-RV/ATR, not from the quantile model — hybrid design
+  sl_vol_multiplier: null # k in SL = entry ± k * volatility_estimate — to be calibrated empirically, not guessed
+
+risk:
+  fixed_risk_pct: 0.05   # deliberate aggressive profile — do not treat as a default to tune down
