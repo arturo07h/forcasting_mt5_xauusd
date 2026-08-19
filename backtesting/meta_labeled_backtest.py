@@ -45,6 +45,7 @@ def build_dataset():
     xau["mid_high"] = (xau["bid_high"] + xau["ask_high"]) / 2
     xau["mid_low"] = (xau["bid_low"] + xau["ask_low"]) / 2
     xau["mid_close"] = (xau["bid_close"] + xau["ask_close"]) / 2
+    xau["spread"] = xau["ask_close"] - xau["bid_close"]  # real bid/ask spread, for transaction-cost modeling
 
     feat_files = sorted((DATA_PROCESSED_DIR / "symbol=XAUUSD" / "interval=M5").glob("year=*/month=*.parquet"))
     feat = pd.concat([pd.read_parquet(f) for f in feat_files], ignore_index=True)[["time", "atr_14"]]
@@ -75,6 +76,16 @@ def label_at_threshold(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
     d2 = df.copy()
     d2["label"], d2["realized_ret"], d2["time_to_hit"] = label, ret, time_to_hit
     d2["sl_dist"], d2["tp_dist"] = sl_dist, tp_dist
+    d2["orig_idx"] = np.arange(len(d2))
+
+    # round-trip transaction cost: real spread at entry, and at the actual exit bar
+    # (found via time_to_hit — the bar where the barrier was touched, or the vertical
+    # barrier for a timeout) — averaged, since the holding period can span up to 4h
+    # during which the spread regime can shift (EDA: spread correlates with volatility)
+    exit_idx = np.minimum(d2["orig_idx"] + d2["time_to_hit"], len(df) - 1).astype(int)
+    spread_exit = df["spread"].values[exit_idx]
+    d2["cost_frac"] = (d2["spread"] + spread_exit) / 2 / d2["mid_close"]
+
     return d2.loc[valid].reset_index(drop=True)
 
 
@@ -85,46 +96,52 @@ def run():
     results = []
     for threshold in THRESHOLDS:
         labeled = label_at_threshold(df, threshold)
-        seq_R, seq_label = sequential_r_multiples(labeled)
-        n = len(seq_R)
-        print(f"\n=== meta_proba >= {threshold} ({n:,} trades) ===")
-        print(f"SL={100*(seq_label==-1).mean():.1f}%  TP={100*(seq_label==1).mean():.1f}%  "
-              f"E[R]={seq_R.mean():.4f}  max_streak={max_streak(seq_label==-1)}")
+        cost_frac = labeled["cost_frac"].values
+        print(f"\n=== meta_proba >= {threshold} ({len(labeled):,} bars before sequencing) ===")
+        print(f"  avg round-trip cost: {cost_frac.mean()*100:.4f}% of price "
+              f"(real bid/ask spread, entry+exit averaged)")
 
-        # per-fold consistency check
-        per_fold = []
-        for fold_id in sorted(labeled["fold"].unique()):
-            sub_R, sub_label = sequential_r_multiples(labeled[labeled["fold"] == fold_id])
-            per_fold.append({"fold": int(fold_id), "n": len(sub_R), "E_R": float(sub_R.mean())})
-            print(f"  fold {fold_id} ({FOLDS[fold_id]['test_start']}): n={len(sub_R)} E[R]={sub_R.mean():.4f}")
+        variant_rows = {}
+        for variant, cf in [("no_costs", None), ("with_costs", cost_frac)]:
+            seq_R, seq_label = sequential_r_multiples(labeled, cost_frac=cf)
+            n = len(seq_R)
+            print(f"  [{variant}] SL={100*(seq_label==-1).mean():.1f}%  TP={100*(seq_label==1).mean():.1f}%  "
+                  f"E[R]={seq_R.mean():.4f}  max_streak={max_streak(seq_label==-1)}")
 
-        fs = np.linspace(0.001, 0.10, 200)
-        growths = [np.mean(np.log(1 + f * seq_R)) for f in fs]
-        best_f = float(fs[int(np.argmax(growths))])
-        growth_at_5pct = float(np.mean(np.log(1 + 0.05 * seq_R)))
+            per_fold = []
+            for fold_id in sorted(labeled["fold"].unique()):
+                mask = labeled["fold"].values == fold_id
+                sub_cf = cost_frac[mask] if cf is not None else None
+                sub_R, sub_label = sequential_r_multiples(labeled[mask], cost_frac=sub_cf)
+                per_fold.append({"fold": int(fold_id), "n": len(sub_R), "E_R": float(sub_R.mean())})
 
-        rng = np.random.default_rng(0)
-        boot = np.array([np.mean(np.log(1 + 0.05 * rng.choice(seq_R, size=n, replace=True)))
-                          for _ in range(N_BOOTSTRAP)])
-        p_positive = float((boot > 0).mean())
+            fs = np.linspace(0.001, 0.10, 200)
+            growths = [np.mean(np.log(1 + f * seq_R)) for f in fs]
+            best_f = float(fs[int(np.argmax(growths))])
+            growth_at_5pct = float(np.mean(np.log(1 + 0.05 * seq_R)))
 
-        equity = np.cumprod(1 + 0.05 * seq_R)
-        running_max = np.maximum.accumulate(equity)
-        max_dd = float((equity - running_max).min() / running_max[np.argmin(equity - running_max)])
+            rng = np.random.default_rng(0)
+            boot = np.array([np.mean(np.log(1 + 0.05 * rng.choice(seq_R, size=n, replace=True)))
+                              for _ in range(N_BOOTSTRAP)])
+            p_positive = float((boot > 0).mean())
 
-        row = {
-            "meta_proba_threshold": threshold, "n_trades": n,
-            "sl_rate": float((seq_label == -1).mean()), "tp_rate": float((seq_label == 1).mean()),
-            "arithmetic_E_R": float(seq_R.mean()), "max_consecutive_sl_streak": int(max_streak(seq_label == -1)),
-            "growth_optimal_fraction": best_f, "growth_at_5pct_risk": growth_at_5pct,
-            "bootstrap_P_growth_positive_at_5pct": p_positive,
-            "final_equity_multiple_5pct_no_costs": float(equity[-1]),
-            "max_drawdown_5pct_no_costs": max_dd,
-            "per_fold": per_fold,
-        }
+            equity = np.cumprod(1 + 0.05 * seq_R)
+            running_max = np.maximum.accumulate(equity)
+            max_dd = float((equity - running_max).min() / running_max[np.argmin(equity - running_max)])
+
+            variant_rows[variant] = {
+                "n_trades": n, "sl_rate": float((seq_label == -1).mean()), "tp_rate": float((seq_label == 1).mean()),
+                "arithmetic_E_R": float(seq_R.mean()), "max_consecutive_sl_streak": int(max_streak(seq_label == -1)),
+                "growth_optimal_fraction": best_f, "growth_at_5pct_risk": growth_at_5pct,
+                "bootstrap_P_growth_positive_at_5pct": p_positive,
+                "final_equity_multiple_5pct": float(equity[-1]), "max_drawdown_5pct": max_dd,
+                "per_fold": per_fold,
+            }
+            print(f"  [{variant}] growth-optimal-f={best_f*100:.2f}%  growth@5%={growth_at_5pct:.6f}  "
+                  f"P(growth@5%>0)={p_positive*100:.1f}%  max_DD@5%={max_dd*100:.1f}%")
+
+        row = {"meta_proba_threshold": threshold, "avg_cost_frac_pct": float(cost_frac.mean() * 100), **variant_rows}
         results.append(row)
-        print(f"growth-optimal-f={best_f*100:.2f}%  growth@5%={growth_at_5pct:.6f}  "
-              f"P(growth@5%>0)={p_positive*100:.1f}%  max_DD@5%={max_dd*100:.1f}%")
 
     out_path = Path(__file__).resolve().parent / "meta_labeled_backtest_summary.json"
     out_path.write_text(json.dumps(results, indent=2))

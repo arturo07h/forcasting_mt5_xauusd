@@ -3,16 +3,16 @@
   "sl_rate": 0.6404139257256553,
   "tp_rate": 0.29865864455508695,
   "timeout_rate": 0.060927429719257825,
-  "arithmetic_mean_R": 0.01359076593846848,
+  "arithmetic_mean_R": 0.014545287660435996,
   "max_consecutive_sl_streak": 26,
   "drawdown_at_max_streak_5pct_risk": 0.7364799055342579,
   "geometric_growth_per_trade_by_risk_fraction": {
-    "0.05": -0.0019922935849911155,
-    "0.03": -0.0005744287653478849,
-    "0.02": -0.0001696433382279865,
-    "0.01": 2.4223786400987944e-05,
-    "0.005": 3.985953699762811e-05
+    "0.05": -0.001942610752089878,
+    "0.03": -0.0005451007799559918,
+    "0.02": -0.0001502478165504853,
+    "0.01": 3.3844632704871585e-05,
+    "0.005": 4.4650973586058426e-05
   },
-  "kelly_optimal_fixed_fraction": 0.00595798319327731,
+  "kelly_optimal_fixed_fraction": 0.006453781512605041,
   "note": "Unconditional/blind-entry baseline \u2014 every valid bar taken as a trade, no model selectivity, no transaction costs. This is a worst-case floor to compare the trained quantile model against, not a performance forecast."
 }

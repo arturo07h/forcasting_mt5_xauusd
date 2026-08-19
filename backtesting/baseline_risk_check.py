@@ -28,7 +28,11 @@ def load_labels() -> pd.DataFrame:
     return df.sort_values("time").reset_index(drop=True)
 
 
-def sequential_r_multiples(df: pd.DataFrame) -> np.ndarray:
+def sequential_r_multiples(df: pd.DataFrame, cost_frac: np.ndarray = None) -> np.ndarray:
+    """cost_frac: optional per-row round-trip transaction cost, as a fraction of entry
+    price, subtracted from the trade's realized return before computing R. None = no
+    costs (the default used everywhere until the cost-aware backtest was added).
+    """
     labels = df["label"].values
     tth = df["time_to_hit"].values
     ret = df["realized_ret"].values
@@ -36,6 +40,7 @@ def sequential_r_multiples(df: pd.DataFrame) -> np.ndarray:
     tp_dist = df["tp_dist"].values
     price = df["mid_close"].values
     n = len(df)
+    cost = cost_frac if cost_frac is not None else np.zeros(n)
 
     # a handful of bars have near-zero ATR (thin early-history liquidity) which blows up
     # R = ret/sl_frac toward infinity — floor sl_dist at its 1st percentile so those bars
@@ -48,11 +53,13 @@ def sequential_r_multiples(df: pd.DataFrame) -> np.ndarray:
     while i < n:
         lab = labels[i]
         if lab == -1:
-            R = -1.0
+            base_ret = -sl_dist[i] / price[i]
         elif lab == 1:
-            R = tp_dist[i] / sl_dist_safe[i]
+            base_ret = tp_dist[i] / price[i]
         else:
-            R = (ret[i] * price[i]) / sl_dist_safe[i]
+            base_ret = ret[i]
+        adj_ret = base_ret - cost[i]
+        R = adj_ret * price[i] / sl_dist_safe[i]
         seq_R.append(R)
         seq_label.append(lab)
         i += max(int(tth[i]), 1)
