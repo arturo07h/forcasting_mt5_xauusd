@@ -89,15 +89,17 @@ void CheckNewBarAndAct()
       return;
    g_last_h1_bar_time = current_forming_bar;
 
-   datetime closed_bar_time = iTime(InpSymbol, PERIOD_H1, 1);
-   Print("New H1 bar. Closed bar time: ", TimeToString(closed_bar_time, TIME_DATE | TIME_MINUTES));
+   datetime closed_bar_time_server = iTime(InpSymbol, PERIOD_H1, 1);
+   datetime closed_bar_time_utc = closed_bar_time_server - (int)TimeGMTOffset();
+   Print("New H1 bar. Closed bar time (server): ", TimeToString(closed_bar_time_server, TIME_DATE | TIME_MINUTES),
+         "  (UTC): ", TimeToString(closed_bar_time_utc, TIME_DATE | TIME_MINUTES));
 
    ExportBars(PERIOD_H1, InpBarsToExport, "xauusd_h1_bars.csv");
    ExportBars(PERIOD_H4, InpH4BarsToExport, "xauusd_h4_bars.csv");
    ExportBars(PERIOD_D1, InpD1BarsToExport, "xauusd_d1_bars.csv");
 
    ManageOpenPosition();
-   TryReadSignalAndEnter(closed_bar_time);
+   TryReadSignalAndEnter(closed_bar_time_utc); // must match live_inference.py's UTC bar_time exactly
   }
 
 //+------------------------------------------------------------------+
@@ -124,11 +126,20 @@ void ExportBars(ENUM_TIMEFRAMES tf, int count, string filename)
       return;
      }
 
+   // iTime()/CopyRates() report bar times in the TRADE SERVER's timezone, not UTC/GMT —
+   // the whole Python-side pipeline (training and live) works in true UTC (Dukascopy),
+   // so every exported bar time is converted here. TimeGMTOffset() is "how far ahead of
+   // GMT the server clock currently is," in seconds; GMT = server_time - offset. Using
+   // today's offset for the last ~60 bars is a fine approximation (a DST change inside
+   // that window would be off by an hour for the oldest few bars, never for the newest).
+   int gmt_offset = (int)TimeGMTOffset();
+
    FileWrite(fh, "time", "open", "high", "low", "close", "spread_price");
    for(int i = 0; i < copied; i++)
      {
       double spread_price = rates[i].spread * point;
-      FileWrite(fh, TimeToString(rates[i].time, TIME_DATE | TIME_SECONDS),
+      datetime bar_time_utc = rates[i].time - gmt_offset;
+      FileWrite(fh, TimeToString(bar_time_utc, TIME_DATE | TIME_SECONDS),
                 DoubleToString(rates[i].open, _Digits), DoubleToString(rates[i].high, _Digits),
                 DoubleToString(rates[i].low, _Digits), DoubleToString(rates[i].close, _Digits),
                 DoubleToString(spread_price, _Digits));
@@ -227,7 +238,10 @@ void TryReadSignalAndEnter(datetime closed_bar_time)
       return;
      }
 
-   double age_minutes = (double)(TimeCurrent() - (datetime)computed_at_unix) / 60.0;
+   // computed_at_unix is a true UTC unix timestamp (Python); TimeCurrent() is server time —
+   // same conversion as the bar times, or this would misjudge staleness by the GMT offset
+   datetime now_utc = TimeCurrent() - (int)TimeGMTOffset();
+   double age_minutes = (double)(now_utc - (datetime)computed_at_unix) / 60.0;
    if(age_minutes > InpSignalMaxAgeMin)
      {
       Print("Signal is stale (", DoubleToString(age_minutes, 1), " min old) — Python service may be down, skipping entry.");
