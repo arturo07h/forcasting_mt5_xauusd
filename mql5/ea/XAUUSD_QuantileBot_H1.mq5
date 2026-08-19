@@ -27,7 +27,7 @@
 #include <Trade\Trade.mqh>
 
 input group "=== Symbol & risk ==="
-input string InpSymbol            = "XAUUSD";   // EXACT broker symbol — verify in Market Watch first, may need a suffix
+input string InpSymbol            = "XAUUSD.s"; // confirmed exact symbol on JustMarkets-Demo3 (2026-08-19)
 input double InpRiskPct           = 0.05;       // 5% fixed risk per trade — deliberate, do not soften
 input double InpSLAtrMult         = 1.5;        // must match SL_ATR_MULT in live_inference.py
 
