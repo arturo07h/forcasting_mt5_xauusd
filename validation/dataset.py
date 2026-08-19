@@ -18,8 +18,14 @@ from config.settings import DATA_RAW_DIR, DATA_PROCESSED_DIR
 
 N_HORIZON = 12
 
+PRICE_FFD_ZSCORE_WINDOW = 25920  # ~90 days of M5 bars — long enough to keep meaningful
+# trend memory (the whole point of using FFD over plain returns), short enough that the
+# feature can never drift 10+ std outside its own recent range the way the raw FFD level
+# did across gold's decade-scale price appreciation (see project memory: fold 5 test
+# z-scores under fixed train-period standardization reached 15.5)
+
 CORE_FEATURE_COLS = [
-    "price_ffd", "rv_12", "rv_48", "rv_288", "har_rv_daily", "har_rv_weekly", "har_rv_monthly",
+    "price_ffd_zscore", "rv_12", "rv_48", "rv_288", "har_rv_daily", "har_rv_weekly", "har_rv_monthly",
     "gk_vol_48", "yz_vol_48", "rsi_14", "macd", "macd_signal", "macd_hist", "bb_pct_b_20", "atr_14",
     "hour_sin", "hour_cos", "dow_sin", "dow_cos", "session_asia", "session_london", "session_ny",
     "session_london_ny_overlap", "spread", "spread_mean_12", "spread_x_rv12",
@@ -55,6 +61,15 @@ def load_modeling_dataset(profile: str = "core") -> pd.DataFrame:
     xau = _load_symbol("XAUUSD", "M5")
     xau["target_fwd_ret_12"] = _forward_return_target(xau)
     feat = feat.merge(xau[["time", "target_fwd_ret_12"]], on="time", how="inner")
+
+    # rolling (not fixed-period) z-score: price_ffd's raw level drifts with the price
+    # trend over years (gold ~$450 -> ~$4000+ across this dataset) even though it passes
+    # ADF — "stationary" doesn't mean "bounded within any practical modeling window,"
+    # and a fixed train-period mean/std leaves later test folds many std devs out of range
+    mp = int(PRICE_FFD_ZSCORE_WINDOW * 0.9)
+    roll_mean = feat["price_ffd"].rolling(PRICE_FFD_ZSCORE_WINDOW, min_periods=mp).mean()
+    roll_std = feat["price_ffd"].rolling(PRICE_FFD_ZSCORE_WINDOW, min_periods=mp).std()
+    feat["price_ffd_zscore"] = (feat["price_ffd"] - roll_mean) / roll_std
 
     cols = ["time"] + CORE_FEATURE_COLS + (EXTENDED_ONLY_COLS if profile == "extended" else []) + ["target_fwd_ret_12"]
     out = feat[cols].dropna().reset_index(drop=True)
