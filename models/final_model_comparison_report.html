@@ -108,10 +108,11 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
 </header>
 
 <section id="verdict">
-  <div class="verdict-box" style="background:var(--positive-soft); border-color:var(--positive)">
-    <p class="verdict-title" style="color:var(--positive)">Veredicto actualizado, tras meta-labeling</p>
-    <p><b>Filtrando a las señales de mayor confianza de un segundo modelo (meta_proba &ge; 0.40, top ~3% de los setups), la fracción de riesgo que maximiza crecimiento geométrico llega a 5.27% — al nivel de tu objetivo</b> — y se sostiene positiva en los 6 folds walk-forward independientes (2014-2026, incluyendo COVID y la subida 2024-2026), no es un resultado de un solo período con suerte.</p>
-    <p><b>Pero esto no es "problema resuelto," hay que decirlo con la misma honestidad:</b> la confianza estadística (bootstrap) de que el crecimiento a 5% sea realmente positivo es 95.1% — real, pero no blindado (queda ~5% de probabilidad de que el edge no sea genuino a este tamaño de muestra). No incluye costos de transacción/spread en ningún punto del backtest. Y el <b>drawdown máximo incluso en este mejor caso es -87.6%</b> — el edge siendo real no garantiza que cualquier cuenta sobreviva psicológica o operativamente el camino hasta el resultado positivo de largo plazo. Es un resultado genuinamente mejor, no una luz verde sin condiciones.</p>
+  <div class="verdict-box">
+    <p class="verdict-title">Veredicto final, con costos reales incluidos: no sobrevive</p>
+    <p>El meta-labeling parecía cerrar la brecha hasta el 5% objetivo (ver más abajo) — <b>pero ese resultado no incluía spread real</b>. Al incluirlo, el edge se revierte por completo: en cada umbral probado, el retorno esperado por operación pasa de positivo (+0.02 a +0.10 R) a claramente negativo (-0.06 a -0.21 R), y la fracción óptima de riesgo colapsa a ~0.10% en todos los casos.</p>
+    <p><b>La causa es mecánica, no un error:</b> el SL (1.5×ATR) tiene una distancia mediana de solo ~0.108% del precio, mientras que el spread real de ida y vuelta es ~0.0235% — <b>el spread solo ya se come ~22% de la unidad de riesgo (1R) en cada operación</b>, gane o pierda. Con un stop tan ajustado relativo al costo de ejecución real en M5, ninguna cantidad de selectividad del modelo alcanza a compensarlo.</p>
+    <p>Esto reabre el diseño de SL/TP: la distancia del stop necesita ser consciente del spread típico, no solo de la volatilidad — y vale la pena preguntarse si M5 es el timeframe correcto para oro dado el costo de ejecución real frente a la distancia de stop alcanzable. Antes de seguir iterando, quiero discutir esto contigo directamente en vez de asumir el siguiente paso.</p>
   </div>
 </section>
 
@@ -135,8 +136,8 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
     </div>
     <div class="kf-card">
       <span class="tag critical">El hallazgo decisivo</span>
-      <div class="kf-title">5% de riesgo no sobrevive con este modelo</div>
-      <div class="kf-body">Con los quantiles reales de LightGBM reemplazando el placeholder, la fracción óptima de crecimiento geométrico es 0.5-0.7% — casi igual al baseline sin modelo (0.6%). Incluso filtrando al 10% de señales más selectivas, solo llega a ~1.4%.</div>
+      <div class="kf-title">5% de riesgo no sobrevive, ni con meta-labeling</div>
+      <div class="kf-body">El meta-labeling parecía cerrar la brecha (fracción óptima 5.27% sin costos) — pero al incluir spread real, el edge se revierte en todos los umbrales probados. Causa: el SL de 1.5×ATR es tan ajustado que el spread solo consume ~22% de la unidad de riesgo por operación.</div>
     </div>
   </div>
 </section>
@@ -206,7 +207,7 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
   <h3>Baseline sin modelo (entrada ciega en cada barra válida)</h3>
   <div class="finding critical" style="border-left-color:var(--critical)">
     <b>105,043 trades, SL=64.0% / TP=29.9% / timeout=6.1%</b>
-    <p>E[R] aritmético = +0.0136 (edge positivo) pero fracción óptima de crecimiento = <b class="num">0.60%</b>. A 5% de riesgo: crecimiento geométrico negativo = ruina garantizada a largo plazo, a pesar del edge aritmético positivo (sobre-apalancamiento clásico tipo Kelly).</p>
+    <p>E[R] aritmético = +0.0145 (edge positivo) pero fracción óptima de crecimiento = <b class="num">0.65%</b>. A 5% de riesgo: crecimiento geométrico negativo = ruina garantizada a largo plazo, a pesar del edge aritmético positivo (sobre-apalancamiento clásico tipo Kelly).</p>
   </div>
 
   <h3>Con quantiles reales de LightGBM + filtro de convicción</h3>
@@ -267,80 +268,80 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
   </div>
 
   <h3>Meta-labeling: un segundo modelo que predice P(éxito) directamente</h3>
-  <p class="wide">En vez de inferir selectividad del tamaño del movimiento predicho, se entrena un clasificador binario (mismas features) que predice directamente si esa operación específica va a llegar a TP antes que a SL. Se filtra por el umbral de confianza de ese modelo.</p>
+  <p class="wide">En vez de inferir selectividad del tamaño del movimiento predicho, se entrena un clasificador binario (mismas features) que predice directamente si esa operación específica va a llegar a TP antes que a SL. Se filtra por el umbral de confianza de ese modelo. Columnas en <span style="color:var(--positive)">verde</span> = sin costos, en <span style="color:var(--critical)">rojo</span> = con spread real incluido.</p>
   <div class="table-wrap">
     <table>
-      <thead><tr><th>Umbral meta_proba</th><th>N trades</th><th>TP%</th><th>E[R]</th><th>Fracción óptima</th><th>P(crecimiento&gt;0 a 5%)</th><th>Max drawdown a 5%</th><th>vs. objetivo 5%</th></tr></thead>
+      <thead><tr><th>Umbral meta_proba</th><th>N trades</th><th>TP%</th><th>E[R] sin costos</th><th>E[R] con costos</th><th>Fracción óptima sin costos</th><th>Fracción óptima con costos</th><th>vs. objetivo 5%</th></tr></thead>
       <tbody><tr>
             <td class="num">&ge;0.2</td>
             <td class="num">41,998</td>
             <td class="num">34.1%</td>
-            <td class="num">0.0210</td>
-            <td class="num"><b>1.05%</b></td>
-            <td class="num" style="color:var(--critical)"><b>0.0%</b></td>
-            <td class="num">-100.0%</td>
-            <td><div class="bar-track target"><div class="bar-fill accent" style="width:20.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+            <td class="num" style="color:var(--positive)">0.0218</td>
+            <td class="num" style="color:var(--critical)"><b>-0.2073</b></td>
+            <td class="num">1.09%</td>
+            <td class="num" style="color:var(--critical)"><b>0.10%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:21.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
         </tr>
 <tr>
             <td class="num">&ge;0.25</td>
             <td class="num">26,223</td>
             <td class="num">34.0%</td>
-            <td class="num">0.0287</td>
-            <td class="num"><b>1.44%</b></td>
-            <td class="num" style="color:var(--critical)"><b>0.8%</b></td>
-            <td class="num">-100.0%</td>
+            <td class="num" style="color:var(--positive)">0.0294</td>
+            <td class="num" style="color:var(--critical)"><b>-0.1819</b></td>
+            <td class="num">1.44%</td>
+            <td class="num" style="color:var(--critical)"><b>0.10%</b></td>
             <td><div class="bar-track target"><div class="bar-fill accent" style="width:28.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
         </tr>
 <tr>
             <td class="num">&ge;0.3</td>
             <td class="num">13,144</td>
             <td class="num">33.8%</td>
-            <td class="num">0.0326</td>
-            <td class="num"><b>1.64%</b></td>
-            <td class="num" style="color:var(--critical)"><b>9.6%</b></td>
-            <td class="num">-100.0%</td>
+            <td class="num" style="color:var(--positive)">0.0332</td>
+            <td class="num" style="color:var(--critical)"><b>-0.1571</b></td>
+            <td class="num">1.64%</td>
+            <td class="num" style="color:var(--critical)"><b>0.10%</b></td>
             <td><div class="bar-track target"><div class="bar-fill accent" style="width:32.8%"></div><div class="target-marker" style="left:100%"></div></div></td>
         </tr>
 <tr>
             <td class="num">&ge;0.35</td>
             <td class="num">5,507</td>
             <td class="num">34.8%</td>
-            <td class="num">0.0720</td>
-            <td class="num"><b>3.63%</b></td>
-            <td class="num" style="color:var(--warning)"><b>88.1%</b></td>
-            <td class="num">-94.5%</td>
-            <td><div class="bar-track target"><div class="bar-fill accent" style="width:72.6%"></div><div class="target-marker" style="left:100%"></div></div></td>
+            <td class="num" style="color:var(--positive)">0.0732</td>
+            <td class="num" style="color:var(--critical)"><b>-0.1003</b></td>
+            <td class="num">3.73%</td>
+            <td class="num" style="color:var(--critical)"><b>0.10%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:74.6%"></div><div class="target-marker" style="left:100%"></div></div></td>
         </tr>
 <tr>
             <td class="num">&ge;0.4</td>
             <td class="num">1,980</td>
             <td class="num">36.0%</td>
-            <td class="num">0.0989</td>
-            <td class="num"><b>5.27%</b></td>
-            <td class="num" style="color:var(--positive)"><b>95.1%</b></td>
-            <td class="num">-87.6%</td>
+            <td class="num" style="color:var(--positive)">0.1000</td>
+            <td class="num" style="color:var(--critical)"><b>-0.0572</b></td>
+            <td class="num">5.37%</td>
+            <td class="num" style="color:var(--critical)"><b>0.10%</b></td>
             <td><div class="bar-track target"><div class="bar-fill accent" style="width:100.0%"></div><div class="target-marker" style="left:100%"></div></div></td>
         </tr></tbody>
     </table>
   </div>
   <div class="finding positive">
-    <b>meta_proba &ge; 0.40 alcanza el objetivo — consistente en los 6 folds</b>
-    <p>1,980 trades sobre 12.6 años (~157/año). Verificado fold por fold: los 6 periodos walk-forward independientes muestran E[R] positivo en este umbral (rango 0.034 a 0.188), no es un resultado concentrado en un solo régimen. La probabilidad bootstrap de que el crecimiento a 5% sea realmente positivo sube de forma monótona con el umbral: 0% → 0.8% → 9.6% → 88.1% → 95.1% — una progresión suave, no un salto sospechoso en un punto específico.</p>
+    <b>Sin costos: meta_proba &ge; 0.40 alcanzaba el objetivo, consistente en los 6 folds</b>
+    <p>1,980 trades sobre 12.6 años (~157/año). Verificado fold por fold: los 6 periodos walk-forward independientes mostraban E[R] positivo en este umbral, no era un resultado concentrado en un solo régimen. La probabilidad bootstrap de que el crecimiento a 5% fuera realmente positivo subía de forma monótona con el umbral: 0% → 0.8% → 9.6% → 88.1% → 95.8% — una progresión suave, no un salto sospechoso en un punto específico.</p>
   </div>
-  <div class="finding warn">
-    <b>El drawdown sigue siendo severo incluso en el mejor caso</b>
-    <p>-87.6% de drawdown máximo a 5% de riesgo, sin costos de transacción incluidos. Un edge real no garantiza que cualquier cuenta aguante psicológica u operativamente el camino hasta el resultado positivo de largo plazo — y el fold 2022-2024 muestra el edge más débil de los seis, señal de que no todos los regímenes futuros van a comportarse igual de bien.</p>
+  <div class="finding critical" style="border-left-color:var(--critical)">
+    <b>Con costos reales (spread real, entrada+salida promediados): el edge se revierte por completo</b>
+    <p>En <i>todos</i> los umbrales probados, E[R] pasa de positivo a negativo (-0.06 a -0.21 R) y la fracción óptima colapsa a ~0.10%. Causa mecánica: el SL de 1.5×ATR tiene una distancia mediana de solo ~0.108% del precio, mientras que el spread real de ida y vuelta es ~0.0235% — el spread solo consume ~22% de la unidad de riesgo en cada operación. Ningún nivel de selectividad del modelo compensa eso con un stop tan ajustado.</p>
   </div>
 </section>
 
 <section id="next-steps">
   <div class="section-head"><h2>Opciones reales desde acá</h2></div>
   <ul class="impl-list">
-    <li><span class="arrow">→</span> Incorporar costos de transacción reales (spread, slippage) al backtest antes de considerar esto validado — ningún número de esta sección los incluye todavía</li>
-    <li><span class="arrow">→</span> Investigar por qué el fold 2022-2024 es el más débil — si es un régimen genuinamente distinto (ciclo agresivo de subida de tasas), vale la pena entender antes de confiar en que el edge se mantenga en condiciones parecidas</li>
-    <li><span class="arrow">→</span> Validar el meta-modelo con una segunda ronda de datos/período (holdout adicional) antes de tratar el 95.1% de confianza como definitivo — la muestra en el umbral ganador es de solo 1,980 trades</li>
-    <li><span class="arrow">→</span> Decidir si el drawdown de -87.6% es aceptable para la cuenta demo de $200, incluso sabiendo que el edge de fondo parece real</li>
-    <li><span class="arrow">→</span> Simular la ejecución completa (MQL5 + ONNX) sobre el período más reciente para confirmar que el pipeline de inferencia en producción reproduce estos números antes de ir a demo</li>
+    <li><span class="arrow">→</span> Rediseñar el SL para que sea consciente del spread, no solo de la volatilidad — ej. <code>SL &ge; max(k×ATR, m×spread típico)</code> — antes de volver a probar cualquier variante de TP o selectividad</li>
+    <li><span class="arrow">→</span> Re-optimizar SL y TP juntos (no uno a la vez) ahora que se sabe que ambos intentos previos (TP más bajo, luego meta-labeling) fallaron por no tratar el SL como parte del mismo problema</li>
+    <li><span class="arrow">→</span> Evaluar si M5 es el timeframe correcto para oro dado el costo de ejecución real frente a la distancia de stop alcanzable — quizás H1 o un horizonte más largo cambie la ecuación de costos</li>
+    <li><span class="arrow">→</span> Investigar por qué el fold 2022-2024 mostró el edge más débil antes de asumir que cualquier solución futura se sostiene en todos los regímenes</li>
+    <li><span class="arrow">→</span> No avanzar hacia el EA/MQL5 hasta que exista una configuración SL/TP que sobreviva costos reales de forma consistente</li>
   </ul>
 </section>
 
