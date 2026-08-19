@@ -7,7 +7,7 @@ into one dataset.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 
 import dukascopy_python as dk
@@ -49,11 +49,15 @@ def fetch_single_side(instrument: str, interval: str, start: datetime, end: date
 
 
 def _month_chunks(start: datetime, end: datetime):
+    """Upper bound of each chunk is exclusive (nudged back 1s) — dukascopy_python's fetch()
+    includes a bar exactly at `end`, so without this the boundary bar is duplicated between
+    two adjacent months' output files.
+    """
     cur = datetime(start.year, start.month, 1)
     while cur < end:
         nxt = datetime(cur.year + (cur.month // 12), (cur.month % 12) + 1, 1)
         chunk_start = max(cur, start)
-        chunk_end = min(nxt, end)
+        chunk_end = min(nxt, end) - timedelta(seconds=1)
         yield chunk_start, chunk_end
         cur = nxt
 
@@ -91,6 +95,9 @@ def download_range(
         if df.empty:
             print(f"empty {spec.label} {interval_label} {chunk_start:%Y-%m} — likely before available history")
             continue
+
+        # month-boundary bar can come back in both adjacent chunk requests
+        df = df[~df.index.duplicated(keep="first")]
 
         partition_dir.mkdir(parents=True, exist_ok=True)
         df.reset_index().rename(columns={"timestamp": "time"}).to_parquet(partition_path, index=False)
