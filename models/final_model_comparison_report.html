@@ -108,10 +108,10 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
 </header>
 
 <section id="verdict">
-  <div class="verdict-box">
-    <p class="verdict-title">Veredicto directo</p>
-    <p><b>Con el mejor modelo encontrado (LightGBM) y el feature set actual, 5% de riesgo fijo no sobrevive matemáticamente</b> — ni siquiera usando los quantiles reales predichos por el modelo en lugar del placeholder, ni filtrando solo las señales de mayor convicción. La fracción de riesgo que maximiza crecimiento geométrico llega como máximo a ~1.4% (en el 10% de señales más selectivas), muy lejos de 5%.</p>
-    <p>Esto no es un juicio contra tu elección de 5% — es lo que dice la evidencia sobre <i>este modelo específico</i> en <i>este horizonte específico</i>. La selectividad sí ayuda (el edge aritmético casi se cuadruplica al filtrar a las señales top 10%), pero no alcanza a cerrar la brecha. Las opciones reales desde acá: (1) buscar un edge genuinamente más fuerte — más features, otro horizonte, más cómputo para DL, ensamble, meta-labeling — antes de desplegar con 5%, o (2) aceptar un riesgo fijo mucho menor para este modelo tal como está, o (3) algo que tú quieras evaluar que yo no haya considerado. Te lo digo directo, sin suavizarlo.</p>
+  <div class="verdict-box" style="background:var(--positive-soft); border-color:var(--positive)">
+    <p class="verdict-title" style="color:var(--positive)">Veredicto actualizado, tras meta-labeling</p>
+    <p><b>Filtrando a las señales de mayor confianza de un segundo modelo (meta_proba &ge; 0.40, top ~3% de los setups), la fracción de riesgo que maximiza crecimiento geométrico llega a 5.27% — al nivel de tu objetivo</b> — y se sostiene positiva en los 6 folds walk-forward independientes (2014-2026, incluyendo COVID y la subida 2024-2026), no es un resultado de un solo período con suerte.</p>
+    <p><b>Pero esto no es "problema resuelto," hay que decirlo con la misma honestidad:</b> la confianza estadística (bootstrap) de que el crecimiento a 5% sea realmente positivo es 95.1% — real, pero no blindado (queda ~5% de probabilidad de que el edge no sea genuino a este tamaño de muestra). No incluye costos de transacción/spread en ningún punto del backtest. Y el <b>drawdown máximo incluso en este mejor caso es -87.6%</b> — el edge siendo real no garantiza que cualquier cuenta sobreviva psicológica o operativamente el camino hasta el resultado positivo de largo plazo. Es un resultado genuinamente mejor, no una luz verde sin condiciones.</p>
   </div>
 </section>
 
@@ -262,19 +262,85 @@ footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60p
     </table>
   </div>
   <div class="finding warn">
-    <b>La selectividad ayuda, pero no alcanza</b>
-    <p>El edge aritmético casi se cuadruplica (de +0.0098 a +0.0460) al filtrar al 10% más selectivo, y la fracción óptima mejora de 0.5% a 1.44% — pero incluso en el régimen más selectivo probado, se queda muy por debajo del 5% objetivo. La línea roja en la barra de arriba marca dónde estaría el 5% — ningún filtro probado la alcanza.</p>
+    <b>La selectividad por magnitud ayuda, pero no alcanza</b>
+    <p>El edge aritmético casi se cuadruplica (de +0.0098 a +0.0460) al filtrar al 10% más selectivo, y la fracción óptima mejora de 0.5% a 1.44% — pero incluso en el régimen más selectivo probado, se queda muy por debajo del 5% objetivo. Este filtro es un proxy crudo (tamaño del movimiento predicho) — el siguiente paso fue reemplazarlo por un modelo que predice directamente la probabilidad de éxito.</p>
+  </div>
+
+  <h3>Meta-labeling: un segundo modelo que predice P(éxito) directamente</h3>
+  <p class="wide">En vez de inferir selectividad del tamaño del movimiento predicho, se entrena un clasificador binario (mismas features) que predice directamente si esa operación específica va a llegar a TP antes que a SL. Se filtra por el umbral de confianza de ese modelo.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Umbral meta_proba</th><th>N trades</th><th>TP%</th><th>E[R]</th><th>Fracción óptima</th><th>P(crecimiento&gt;0 a 5%)</th><th>Max drawdown a 5%</th><th>vs. objetivo 5%</th></tr></thead>
+      <tbody><tr>
+            <td class="num">&ge;0.2</td>
+            <td class="num">41,998</td>
+            <td class="num">34.1%</td>
+            <td class="num">0.0210</td>
+            <td class="num"><b>1.05%</b></td>
+            <td class="num" style="color:var(--critical)"><b>0.0%</b></td>
+            <td class="num">-100.0%</td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:20.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td class="num">&ge;0.25</td>
+            <td class="num">26,223</td>
+            <td class="num">34.0%</td>
+            <td class="num">0.0287</td>
+            <td class="num"><b>1.44%</b></td>
+            <td class="num" style="color:var(--critical)"><b>0.8%</b></td>
+            <td class="num">-100.0%</td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:28.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td class="num">&ge;0.3</td>
+            <td class="num">13,144</td>
+            <td class="num">33.8%</td>
+            <td class="num">0.0326</td>
+            <td class="num"><b>1.64%</b></td>
+            <td class="num" style="color:var(--critical)"><b>9.6%</b></td>
+            <td class="num">-100.0%</td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:32.8%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td class="num">&ge;0.35</td>
+            <td class="num">5,507</td>
+            <td class="num">34.8%</td>
+            <td class="num">0.0720</td>
+            <td class="num"><b>3.63%</b></td>
+            <td class="num" style="color:var(--warning)"><b>88.1%</b></td>
+            <td class="num">-94.5%</td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:72.6%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td class="num">&ge;0.4</td>
+            <td class="num">1,980</td>
+            <td class="num">36.0%</td>
+            <td class="num">0.0989</td>
+            <td class="num"><b>5.27%</b></td>
+            <td class="num" style="color:var(--positive)"><b>95.1%</b></td>
+            <td class="num">-87.6%</td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:100.0%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <div class="finding positive">
+    <b>meta_proba &ge; 0.40 alcanza el objetivo — consistente en los 6 folds</b>
+    <p>1,980 trades sobre 12.6 años (~157/año). Verificado fold por fold: los 6 periodos walk-forward independientes muestran E[R] positivo en este umbral (rango 0.034 a 0.188), no es un resultado concentrado en un solo régimen. La probabilidad bootstrap de que el crecimiento a 5% sea realmente positivo sube de forma monótona con el umbral: 0% → 0.8% → 9.6% → 88.1% → 95.1% — una progresión suave, no un salto sospechoso en un punto específico.</p>
+  </div>
+  <div class="finding warn">
+    <b>El drawdown sigue siendo severo incluso en el mejor caso</b>
+    <p>-87.6% de drawdown máximo a 5% de riesgo, sin costos de transacción incluidos. Un edge real no garantiza que cualquier cuenta aguante psicológica u operativamente el camino hasta el resultado positivo de largo plazo — y el fold 2022-2024 muestra el edge más débil de los seis, señal de que no todos los regímenes futuros van a comportarse igual de bien.</p>
   </div>
 </section>
 
 <section id="next-steps">
   <div class="section-head"><h2>Opciones reales desde acá</h2></div>
   <ul class="impl-list">
-    <li><span class="arrow">→</span> Buscar un edge más fuerte antes de desplegar con 5%: más features (order flow, más contexto macro), otro horizonte de predicción, ensamble LightGBM+GARCH, o meta-labeling (un segundo modelo que filtre las señales del primero)</li>
-    <li><span class="arrow">→</span> Invertir más cómputo en TCN/LSTM (más épocas, sin el cap de ventanas, quizás en una máquina con GPU dedicada) — no se descarta que DL pueda cerrar la brecha con más recursos</li>
-    <li><span class="arrow">→</span> Aceptar un riesgo fijo menor (~1-1.5%) para este modelo tal como está, en vez de 5%</li>
-    <li><span class="arrow">→</span> Revisar el horizonte de 12 velas — un horizonte distinto podría cambiar el balance de hit-rate vs. captura</li>
-    <li><span class="arrow">→</span> Considerar si el objetivo "comerse todo el pastel" (TP en p90/p95) es la asimetría correcta, dado que el hit-rate real (25-35% con LightGBM) es más bajo que lo que un R:R más moderado permitiría</li>
+    <li><span class="arrow">→</span> Incorporar costos de transacción reales (spread, slippage) al backtest antes de considerar esto validado — ningún número de esta sección los incluye todavía</li>
+    <li><span class="arrow">→</span> Investigar por qué el fold 2022-2024 es el más débil — si es un régimen genuinamente distinto (ciclo agresivo de subida de tasas), vale la pena entender antes de confiar en que el edge se mantenga en condiciones parecidas</li>
+    <li><span class="arrow">→</span> Validar el meta-modelo con una segunda ronda de datos/período (holdout adicional) antes de tratar el 95.1% de confianza como definitivo — la muestra en el umbral ganador es de solo 1,980 trades</li>
+    <li><span class="arrow">→</span> Decidir si el drawdown de -87.6% es aceptable para la cuenta demo de $200, incluso sabiendo que el edge de fondo parece real</li>
+    <li><span class="arrow">→</span> Simular la ejecución completa (MQL5 + ONNX) sobre el período más reciente para confirmar que el pipeline de inferencia en producción reproduce estos números antes de ir a demo</li>
   </ul>
 </section>
 
