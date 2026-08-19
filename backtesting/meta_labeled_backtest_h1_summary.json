@@ -1,0 +1,462 @@
+[
+  {
+    "meta_proba_threshold": 0.2,
+    "avg_cost_frac_pct": 0.023693544115865904,
+    "no_costs": {
+      "n_trades": 1905,
+      "sl_rate": 0.5112860892388451,
+      "tp_rate": 0.47926509186351707,
+      "arithmetic_E_R": 0.07480396528060582,
+      "max_consecutive_sl_streak": 10,
+      "growth_optimal_fraction": 0.05590818030050083,
+      "growth_at_5pct_risk": 0.0020400930212797607,
+      "bootstrap_P_growth_positive_at_5pct": 0.9385,
+      "final_equity_multiple_5pct": 48.734013016530795,
+      "max_drawdown_5pct": -0.26849824442143616,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 679,
+          "E_R": 0.005716257547970859
+        },
+        {
+          "fold": 1,
+          "n": 281,
+          "E_R": 0.07489690248955323
+        },
+        {
+          "fold": 2,
+          "n": 243,
+          "E_R": 0.17234193684461263
+        },
+        {
+          "fold": 3,
+          "n": 230,
+          "E_R": 0.07137563813080235
+        },
+        {
+          "fold": 4,
+          "n": 215,
+          "E_R": 0.040206619585357525
+        },
+        {
+          "fold": 5,
+          "n": 259,
+          "E_R": 0.2101470016442952
+        }
+      ]
+    },
+    "with_costs": {
+      "n_trades": 1905,
+      "sl_rate": 0.5112860892388451,
+      "tp_rate": 0.47926509186351707,
+      "arithmetic_E_R": 0.005641941446444537,
+      "max_consecutive_sl_streak": 10,
+      "growth_optimal_fraction": 0.003994991652754591,
+      "growth_at_5pct_risk": -0.0014237347160199903,
+      "bootstrap_P_growth_positive_at_5pct": 0.1465,
+      "final_equity_multiple_5pct": 0.06638961508736384,
+      "max_drawdown_5pct": -0.9957633081427492,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 679,
+          "E_R": -0.07001107437342328
+        },
+        {
+          "fold": 1,
+          "n": 281,
+          "E_R": -0.0037874141399270407
+        },
+        {
+          "fold": 2,
+          "n": 243,
+          "E_R": 0.09250295797607427
+        },
+        {
+          "fold": 3,
+          "n": 230,
+          "E_R": 0.012150043534647065
+        },
+        {
+          "fold": 4,
+          "n": 215,
+          "E_R": -0.019049852837064892
+        },
+        {
+          "fold": 5,
+          "n": 259,
+          "E_R": 0.16128900367789922
+        }
+      ]
+    }
+  },
+  {
+    "meta_proba_threshold": 0.25,
+    "avg_cost_frac_pct": 0.02356565112979986,
+    "no_costs": {
+      "n_trades": 1444,
+      "sl_rate": 0.5124653739612188,
+      "tp_rate": 0.47645429362880887,
+      "arithmetic_E_R": 0.08593922323394944,
+      "max_consecutive_sl_streak": 12,
+      "growth_optimal_fraction": 0.0628964941569282,
+      "growth_at_5pct_risk": 0.0025550431326945493,
+      "bootstrap_P_growth_positive_at_5pct": 0.946,
+      "final_equity_multiple_5pct": 40.024120449408585,
+      "max_drawdown_5pct": -0.7866052164825642,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 496,
+          "E_R": 0.007518207618202773
+        },
+        {
+          "fold": 1,
+          "n": 197,
+          "E_R": 0.10878072256705089
+        },
+        {
+          "fold": 2,
+          "n": 198,
+          "E_R": 0.22084991717659105
+        },
+        {
+          "fold": 3,
+          "n": 187,
+          "E_R": 0.10310403997152437
+        },
+        {
+          "fold": 4,
+          "n": 182,
+          "E_R": 0.014556026739804637
+        },
+        {
+          "fold": 5,
+          "n": 186,
+          "E_R": 0.18314304973782566
+        }
+      ]
+    },
+    "with_costs": {
+      "n_trades": 1444,
+      "sl_rate": 0.5124653739612188,
+      "tp_rate": 0.47645429362880887,
+      "arithmetic_E_R": 0.016529963460149316,
+      "max_consecutive_sl_streak": 12,
+      "growth_optimal_fraction": 0.011482470784641069,
+      "growth_at_5pct_risk": -0.0009199915244195705,
+      "bootstrap_P_growth_positive_at_5pct": 0.2715,
+      "final_equity_multiple_5pct": 0.2648828142275535,
+      "max_drawdown_5pct": -0.978036272344559,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 496,
+          "E_R": -0.06922663909512257
+        },
+        {
+          "fold": 1,
+          "n": 197,
+          "E_R": 0.030797413595202914
+        },
+        {
+          "fold": 2,
+          "n": 198,
+          "E_R": 0.13930818690185634
+        },
+        {
+          "fold": 3,
+          "n": 187,
+          "E_R": 0.044510687988641245
+        },
+        {
+          "fold": 4,
+          "n": 182,
+          "E_R": -0.04391411811357938
+        },
+        {
+          "fold": 5,
+          "n": 186,
+          "E_R": 0.1336868406947492
+        }
+      ]
+    }
+  },
+  {
+    "meta_proba_threshold": 0.3,
+    "avg_cost_frac_pct": 0.023467051948444704,
+    "no_costs": {
+      "n_trades": 1012,
+      "sl_rate": 0.5227272727272727,
+      "tp_rate": 0.46936758893280633,
+      "arithmetic_E_R": 0.10032160820668445,
+      "max_consecutive_sl_streak": 14,
+      "growth_optimal_fraction": 0.06938564273789649,
+      "growth_at_5pct_risk": 0.00315966090717925,
+      "bootstrap_P_growth_positive_at_5pct": 0.954,
+      "final_equity_multiple_5pct": 24.473155869633896,
+      "max_drawdown_5pct": -0.3365795687109377,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 324,
+          "E_R": -0.008224969597344351
+        },
+        {
+          "fold": 1,
+          "n": 139,
+          "E_R": 0.14666616505426813
+        },
+        {
+          "fold": 2,
+          "n": 149,
+          "E_R": 0.24450114520393804
+        },
+        {
+          "fold": 3,
+          "n": 137,
+          "E_R": 0.17498275823268078
+        },
+        {
+          "fold": 4,
+          "n": 141,
+          "E_R": -0.00089403057195494
+        },
+        {
+          "fold": 5,
+          "n": 122,
+          "E_R": 0.19369735305261096
+        }
+      ]
+    },
+    "with_costs": {
+      "n_trades": 1012,
+      "sl_rate": 0.5227272727272727,
+      "tp_rate": 0.46936758893280633,
+      "arithmetic_E_R": 0.029262149882239512,
+      "max_consecutive_sl_streak": 14,
+      "growth_optimal_fraction": 0.019469115191986644,
+      "growth_at_5pct_risk": -0.000393731322317093,
+      "bootstrap_P_growth_positive_at_5pct": 0.4045,
+      "final_equity_multiple_5pct": 0.6713557536811422,
+      "max_drawdown_5pct": -0.9544196845688002,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 324,
+          "E_R": -0.08612543298247202
+        },
+        {
+          "fold": 1,
+          "n": 139,
+          "E_R": 0.06544417636033245
+        },
+        {
+          "fold": 2,
+          "n": 149,
+          "E_R": 0.16123032310836166
+        },
+        {
+          "fold": 3,
+          "n": 137,
+          "E_R": 0.11300994843438024
+        },
+        {
+          "fold": 4,
+          "n": 141,
+          "E_R": -0.05853995870765042
+        },
+        {
+          "fold": 5,
+          "n": 122,
+          "E_R": 0.14158811738407023
+        }
+      ]
+    }
+  },
+  {
+    "meta_proba_threshold": 0.35,
+    "avg_cost_frac_pct": 0.023492695458481563,
+    "no_costs": {
+      "n_trades": 691,
+      "sl_rate": 0.5065123010130246,
+      "tp_rate": 0.4804630969609262,
+      "arithmetic_E_R": 0.16142798745738474,
+      "max_consecutive_sl_streak": 8,
+      "growth_optimal_fraction": 0.10832053422370616,
+      "growth_at_5pct_risk": 0.00610681549039128,
+      "bootstrap_P_growth_positive_at_5pct": 0.9945,
+      "final_equity_multiple_5pct": 68.02052540764488,
+      "max_drawdown_5pct": -0.5839682493085108,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 222,
+          "E_R": -0.031498681024284096
+        },
+        {
+          "fold": 1,
+          "n": 83,
+          "E_R": 0.18641453678420672
+        },
+        {
+          "fold": 2,
+          "n": 111,
+          "E_R": 0.33341095584864916
+        },
+        {
+          "fold": 3,
+          "n": 89,
+          "E_R": 0.33068996238553017
+        },
+        {
+          "fold": 4,
+          "n": 93,
+          "E_R": 0.05185925748194803
+        },
+        {
+          "fold": 5,
+          "n": 92,
+          "E_R": 0.3361341073906777
+        }
+      ]
+    },
+    "with_costs": {
+      "n_trades": 691,
+      "sl_rate": 0.5065123010130246,
+      "tp_rate": 0.4804630969609262,
+      "arithmetic_E_R": 0.0896030330531635,
+      "max_consecutive_sl_streak": 8,
+      "growth_optimal_fraction": 0.057904841402337225,
+      "growth_at_5pct_risk": 0.002521261618840544,
+      "bootstrap_P_growth_positive_at_5pct": 0.837,
+      "final_equity_multiple_5pct": 5.709844432888839,
+      "max_drawdown_5pct": -0.6801292439444279,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 222,
+          "E_R": -0.1101697982286973
+        },
+        {
+          "fold": 1,
+          "n": 83,
+          "E_R": 0.10542494009866464
+        },
+        {
+          "fold": 2,
+          "n": 111,
+          "E_R": 0.24853110144674254
+        },
+        {
+          "fold": 3,
+          "n": 89,
+          "E_R": 0.2662276934724887
+        },
+        {
+          "fold": 4,
+          "n": 93,
+          "E_R": -0.007226613117888805
+        },
+        {
+          "fold": 5,
+          "n": 92,
+          "E_R": 0.2846570826342866
+        }
+      ]
+    }
+  },
+  {
+    "meta_proba_threshold": 0.4,
+    "avg_cost_frac_pct": 0.023461243692434703,
+    "no_costs": {
+      "n_trades": 426,
+      "sl_rate": 0.48826291079812206,
+      "tp_rate": 0.5,
+      "arithmetic_E_R": 0.24583971831804982,
+      "max_consecutive_sl_streak": 9,
+      "growth_optimal_fraction": 0.1577378964941569,
+      "growth_at_5pct_risk": 0.010159482294658278,
+      "bootstrap_P_growth_positive_at_5pct": 1.0,
+      "final_equity_multiple_5pct": 75.78796125372159,
+      "max_drawdown_5pct": -0.5097662723130049,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 131,
+          "E_R": 0.2371043598246709
+        },
+        {
+          "fold": 1,
+          "n": 57,
+          "E_R": 0.36540293263661094
+        },
+        {
+          "fold": 2,
+          "n": 77,
+          "E_R": 0.2724580631366718
+        },
+        {
+          "fold": 3,
+          "n": 56,
+          "E_R": 0.39540669913522625
+        },
+        {
+          "fold": 4,
+          "n": 57,
+          "E_R": 0.08981930493528294
+        },
+        {
+          "fold": 5,
+          "n": 47,
+          "E_R": 0.1307075035233443
+        }
+      ]
+    },
+    "with_costs": {
+      "n_trades": 426,
+      "sl_rate": 0.48826291079812206,
+      "tp_rate": 0.5,
+      "arithmetic_E_R": 0.17467365524366177,
+      "max_consecutive_sl_streak": 9,
+      "growth_optimal_fraction": 0.10881969949916526,
+      "growth_at_5pct_risk": 0.00662712737563817,
+      "bootstrap_P_growth_positive_at_5pct": 0.986,
+      "final_equity_multiple_5pct": 16.82988646215917,
+      "max_drawdown_5pct": -0.5432715664951502,
+      "per_fold": [
+        {
+          "fold": 0,
+          "n": 131,
+          "E_R": 0.15839531580760569
+        },
+        {
+          "fold": 1,
+          "n": 57,
+          "E_R": 0.29110398277152133
+        },
+        {
+          "fold": 2,
+          "n": 77,
+          "E_R": 0.18664422732505434
+        },
+        {
+          "fold": 3,
+          "n": 56,
+          "E_R": 0.33020117239465013
+        },
+        {
+          "fold": 4,
+          "n": 57,
+          "E_R": 0.03250893554131307
+        },
+        {
+          "fold": 5,
+          "n": 47,
+          "E_R": 0.08419804447202668
+        }
+      ]
+    }
+  }
+]

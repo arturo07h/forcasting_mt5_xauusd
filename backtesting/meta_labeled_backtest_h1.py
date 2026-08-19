@@ -1,0 +1,152 @@
+"""H1 counterpart of meta_labeled_backtest.py — real transaction costs included from
+the start this time (M5 needed a follow-up pass to add them; here it's built in).
+
+Run: ./.venv/bin/python3 backtesting/meta_labeled_backtest_h1.py
+"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+import json
+import numpy as np
+import pandas as pd
+
+from config.settings import DATA_RAW_DIR, DATA_PROCESSED_DIR, PROJECT_ROOT
+from labeling.triple_barrier import triple_barrier_scan
+from backtesting.baseline_risk_check import sequential_r_multiples, max_streak
+from validation.walk_forward_h1 import FOLDS
+
+MAX_HORIZON = 24  # H1 bars (~1 day)
+SL_ATR_MULT = 1.5
+TP_QUANTILE_COL = "pred_q0.9"
+THRESHOLDS = [0.20, 0.25, 0.30, 0.35, 0.40]
+N_BOOTSTRAP = 2000
+
+
+def load_symbol(symbol, interval):
+    files = sorted((DATA_RAW_DIR / f"symbol={symbol}" / f"interval={interval}").glob("year=*/month=*.parquet"))
+    df = pd.concat([pd.read_parquet(f) for f in files], ignore_index=True)
+    df["time"] = pd.to_datetime(df["time"])
+    return df.sort_values("time").reset_index(drop=True)
+
+
+def build_dataset():
+    preds = pd.read_parquet(PROJECT_ROOT / "models" / "checkpoints" / "lightgbm_h1_core_predictions.parquet")
+    preds["time"] = pd.to_datetime(preds["time"], utc=True)
+    meta = pd.read_parquet(PROJECT_ROOT / "models" / "checkpoints" / "meta_label_h1_core_predictions.parquet")
+    meta["time"] = pd.to_datetime(meta["time"], utc=True)
+
+    xau = load_symbol("XAUUSD", "H1")
+    xau["mid_high"] = (xau["bid_high"] + xau["ask_high"]) / 2
+    xau["mid_low"] = (xau["bid_low"] + xau["ask_low"]) / 2
+    xau["mid_close"] = (xau["bid_close"] + xau["ask_close"]) / 2
+    xau["spread"] = xau["ask_close"] - xau["bid_close"]
+
+    feat_files = sorted((DATA_PROCESSED_DIR / "symbol=XAUUSD" / "interval=H1").glob("year=*/month=*.parquet"))
+    feat = pd.concat([pd.read_parquet(f) for f in feat_files], ignore_index=True)[["time", "atr_14"]]
+    feat["time"] = pd.to_datetime(feat["time"])
+
+    df = (xau.merge(feat, on="time", how="inner")
+             .merge(preds[["time", TP_QUANTILE_COL, "fold"]], on="time", how="inner")
+             .merge(meta[["time", "meta_proba"]], on="time", how="inner"))
+    return df.sort_values("time").reset_index(drop=True)
+
+
+def label_at_threshold(df: pd.DataFrame, threshold: float) -> pd.DataFrame:
+    time_diff_min = df["time"].diff().dt.total_seconds() / 60
+    is_anomalous_gap = (time_diff_min > 60) & (time_diff_min <= 1000)
+    gap_shifted = is_anomalous_gap.shift(-1)
+    bad_gap_ahead = gap_shifted[::-1].rolling(MAX_HORIZON, min_periods=1).max()[::-1].fillna(0).astype(bool)
+    not_near_end = np.arange(len(df)) < (len(df) - MAX_HORIZON - 1)
+
+    valid = ((~bad_gap_ahead) & not_near_end & df["atr_14"].notna()
+              & (df[TP_QUANTILE_COL] > 0) & (df["meta_proba"] >= threshold))
+
+    sl_dist = SL_ATR_MULT * df["atr_14"]
+    tp_dist = df["mid_close"] * df[TP_QUANTILE_COL]
+    label, ret, time_to_hit = triple_barrier_scan(
+        df["mid_high"].values, df["mid_low"].values, df["mid_close"].values,
+        tp_dist.values, sl_dist.values, MAX_HORIZON, valid.values,
+    )
+    d2 = df.copy()
+    d2["label"], d2["realized_ret"], d2["time_to_hit"] = label, ret, time_to_hit
+    d2["sl_dist"], d2["tp_dist"] = sl_dist, tp_dist
+    d2["orig_idx"] = np.arange(len(d2))
+
+    exit_idx = np.minimum(d2["orig_idx"] + d2["time_to_hit"], len(df) - 1).astype(int)
+    spread_exit = df["spread"].values[exit_idx]
+    d2["cost_frac"] = (d2["spread"] + spread_exit) / 2 / d2["mid_close"]
+
+    return d2.loc[valid].reset_index(drop=True)
+
+
+def run():
+    print("Building H1 combined dataset (LightGBM TP, meta-model probability, ATR, OHLC, spread)...")
+    df = build_dataset()
+
+    sl_frac_median = (SL_ATR_MULT * df["atr_14"] / df["mid_close"]).median()
+    spread_frac_median = (df["spread"] / df["mid_close"]).median()
+    print(f"Median SL distance: {sl_frac_median*100:.4f}% of price | "
+          f"median spread: {spread_frac_median*100:.4f}% of price | "
+          f"spread/SL ratio: {spread_frac_median/sl_frac_median*100:.1f}%")
+
+    results = []
+    for threshold in THRESHOLDS:
+        labeled = label_at_threshold(df, threshold)
+        cost_frac = labeled["cost_frac"].values
+        print(f"\n=== meta_proba >= {threshold} ({len(labeled):,} bars before sequencing) ===")
+        print(f"  avg round-trip cost: {cost_frac.mean()*100:.4f}% of price")
+
+        variant_rows = {}
+        for variant, cf in [("no_costs", None), ("with_costs", cost_frac)]:
+            seq_R, seq_label = sequential_r_multiples(labeled, cost_frac=cf)
+            n = len(seq_R)
+            print(f"  [{variant}] SL={100*(seq_label==-1).mean():.1f}%  TP={100*(seq_label==1).mean():.1f}%  "
+                  f"E[R]={seq_R.mean():.4f}  max_streak={max_streak(seq_label==-1)}")
+
+            per_fold = []
+            for fold_id in sorted(labeled["fold"].unique()):
+                mask = labeled["fold"].values == fold_id
+                sub_cf = cost_frac[mask] if cf is not None else None
+                sub_R, sub_label = sequential_r_multiples(labeled[mask], cost_frac=sub_cf)
+                per_fold.append({"fold": int(fold_id), "n": len(sub_R), "E_R": float(sub_R.mean())})
+
+            fs = np.linspace(0.001, 0.10, 200)
+            growths = [np.mean(np.log(1 + f * seq_R)) for f in fs]
+            best_f = float(fs[int(np.argmax(growths))])
+            growth_at_5pct = float(np.mean(np.log(1 + 0.05 * seq_R)))
+
+            rng = np.random.default_rng(0)
+            boot = np.array([np.mean(np.log(1 + 0.05 * rng.choice(seq_R, size=n, replace=True)))
+                              for _ in range(N_BOOTSTRAP)]) if n > 0 else np.array([0.0])
+            p_positive = float((boot > 0).mean())
+
+            equity = np.cumprod(1 + 0.05 * seq_R) if n > 0 else np.array([1.0])
+            running_max = np.maximum.accumulate(equity)
+            max_dd = float((equity - running_max).min() / running_max[np.argmin(equity - running_max)])
+
+            variant_rows[variant] = {
+                "n_trades": n, "sl_rate": float((seq_label == -1).mean()) if n else None,
+                "tp_rate": float((seq_label == 1).mean()) if n else None,
+                "arithmetic_E_R": float(seq_R.mean()) if n else None,
+                "max_consecutive_sl_streak": int(max_streak(seq_label == -1)),
+                "growth_optimal_fraction": best_f, "growth_at_5pct_risk": growth_at_5pct,
+                "bootstrap_P_growth_positive_at_5pct": p_positive,
+                "final_equity_multiple_5pct": float(equity[-1]), "max_drawdown_5pct": max_dd,
+                "per_fold": per_fold,
+            }
+            print(f"  [{variant}] growth-optimal-f={best_f*100:.2f}%  growth@5%={growth_at_5pct:.6f}  "
+                  f"P(growth@5%>0)={p_positive*100:.1f}%  max_DD@5%={max_dd*100:.1f}%")
+
+        row = {"meta_proba_threshold": threshold, "avg_cost_frac_pct": float(cost_frac.mean() * 100), **variant_rows}
+        results.append(row)
+
+    out_path = Path(__file__).resolve().parent / "meta_labeled_backtest_h1_summary.json"
+    out_path.write_text(json.dumps(results, indent=2))
+    print(f"\nSaved: {out_path}")
+    return results
+
+
+if __name__ == "__main__":
+    run()
