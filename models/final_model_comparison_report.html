@@ -1,0 +1,285 @@
+<title>XAUUSD Quantile Model Verdict</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root {
+  --bg: #f5f6f5; --bg-raised: #ffffff; --bg-sunken: #eceeec;
+  --text: #16191d; --text-muted: #565f68; --border: #dee1e3;
+  --accent: #96691e; --accent-strong: #7a5416; --accent-soft: #f1e4cb;
+  --positive: #2f6f49; --positive-soft: #e3efe7;
+  --warning: #a6461c; --warning-soft: #f6e6de;
+  --critical: #8c2f2f; --critical-soft: #f7e3e3;
+  --shadow: 0 1px 2px rgba(20,20,15,0.06), 0 6px 20px rgba(20,20,15,0.05);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171a; --bg-raised: #1c2024; --bg-sunken: #191c1f;
+    --text: #e7e7e4; --text-muted: #9ba3aa; --border: #2c3136;
+    --accent: #d9a752; --accent-strong: #eab86b; --accent-soft: #3a2e17;
+    --positive: #5fae7c; --positive-soft: #1e2c23;
+    --warning: #d97a4e; --warning-soft: #2f2119;
+    --critical: #e07a7a; --critical-soft: #341f1f;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171a; --bg-raised: #1c2024; --bg-sunken: #191c1f;
+  --text: #e7e7e4; --text-muted: #9ba3aa; --border: #2c3136;
+  --accent: #d9a752; --accent-strong: #eab86b; --accent-soft: #3a2e17;
+  --positive: #5fae7c; --positive-soft: #1e2c23;
+  --warning: #d97a4e; --warning-soft: #2f2119;
+  --critical: #e07a7a; --critical-soft: #341f1f;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px rgba(0,0,0,0.35);
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--text); font-family: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  margin: 0; line-height: 1.6; font-size: 16px; -webkit-font-smoothing: antialiased; }
+.num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+.wrap { max-width: 960px; margin: 0 auto; padding: 0 24px 96px; }
+header.masthead { border-bottom: 1px solid var(--border); padding: 56px 0 32px; margin-bottom: 40px; }
+.eyebrow { font-family: "IBM Plex Mono", monospace; font-size: 12.5px; letter-spacing: 0.09em; text-transform: uppercase;
+  color: var(--accent); font-weight: 600; margin: 0 0 14px; }
+h1 { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: 42px; line-height: 1.14;
+  letter-spacing: -0.01em; margin: 0 0 14px; text-wrap: balance; }
+.dek { color: var(--text-muted); font-size: 17px; max-width: 66ch; margin: 0 0 20px; }
+.meta-row { display: flex; gap: 28px; flex-wrap: wrap; font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--text-muted); }
+.meta-row b { color: var(--text); font-weight: 600; }
+section { margin-bottom: 52px; }
+.section-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 18px; }
+.section-num { font-family: "IBM Plex Mono", monospace; font-size: 13px; color: var(--accent); font-weight: 600;
+  border: 1px solid var(--border); border-radius: 5px; padding: 2px 7px; flex-shrink: 0; }
+h2 { font-family: "Newsreader", Georgia, serif; font-weight: 500; font-size: 25px; margin: 0; letter-spacing: -0.005em; }
+h3 { font-family: "IBM Plex Sans", sans-serif; font-weight: 600; font-size: 14px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.04em; margin: 26px 0 12px; }
+p { max-width: 70ch; }
+p.wide { max-width: none; }
+.verdict-box { background: var(--critical-soft); border: 1px solid var(--critical); border-radius: 12px;
+  padding: 24px 28px; margin: 20px 0; box-shadow: var(--shadow); }
+.verdict-box .verdict-title { font-family: "Newsreader", serif; font-size: 22px; font-weight: 600; color: var(--critical);
+  margin: 0 0 10px; }
+.verdict-box p { max-width: none; margin: 8px 0; }
+.finding { background: var(--bg-raised); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+  border-radius: 8px; padding: 14px 18px; margin: 16px 0; box-shadow: var(--shadow); }
+.finding.positive { border-left-color: var(--positive); }
+.finding.warn { border-left-color: var(--warning); }
+.finding b { color: var(--text); }
+.finding p { margin: 6px 0 0; color: var(--text-muted); font-size: 14.5px; max-width: none; }
+table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: 13.5px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em;
+  color: var(--text-muted); font-weight: 600; }
+.table-wrap { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border); background: var(--bg-raised); padding: 4px 12px; }
+.table-wrap table { margin: 8px 0; }
+.bar-track { width: 120px; height: 10px; background: var(--bg-sunken); border-radius: 4px; overflow: hidden; position: relative; }
+.bar-fill { height: 100%; background: var(--positive); border-radius: 4px; }
+.bar-fill.warn { background: var(--warning); }
+.bar-fill.accent { background: var(--accent); }
+.bar-track.target { width: 140px; }
+.target-marker { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--critical); }
+.kf-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin: 22px 0 8px; }
+.kf-card { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; box-shadow: var(--shadow); }
+.kf-card .tag { display: inline-block; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; text-transform: uppercase;
+  letter-spacing: 0.05em; font-weight: 600; padding: 2px 8px; border-radius: 100px; margin-bottom: 10px; }
+.tag.confirmed { background: var(--positive-soft); color: var(--positive); }
+.tag.critical { background: var(--critical-soft); color: var(--critical); }
+.tag.decision { background: var(--accent-soft); color: var(--accent-strong); }
+.kf-card .kf-title { font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+.kf-card .kf-body { font-size: 13.5px; color: var(--text-muted); }
+.impl-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.impl-list li { background: var(--bg-raised); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px;
+  font-size: 14.5px; display: flex; gap: 10px; }
+.impl-list .arrow { color: var(--accent); flex-shrink: 0; font-family: "IBM Plex Mono", monospace; }
+footer { border-top: 1px solid var(--border); padding-top: 20px; margin-top: 60px; color: var(--text-muted);
+  font-size: 12.5px; font-family: "IBM Plex Mono", monospace; }
+@media (max-width: 640px) { h1 { font-size: 30px; } .wrap { padding: 0 16px 64px; } header.masthead { padding: 40px 0 28px; } }
+</style>
+
+<div class="wrap">
+
+<header class="masthead">
+  <p class="eyebrow">Research note · Fase 2 · Veredicto final de modelos</p>
+  <h1>XAUUSD M5: comparación de modelos y prueba de riesgo</h1>
+  <p class="dek">Cuatro familias de modelos (LightGBM, GARCH, TCN, LSTM) entrenadas y validadas con walk-forward de 6 folds sobre 21.7 años de historia — y la pregunta que de verdad importa: ¿el mejor modelo genera suficiente edge para sostener 5% de riesgo fijo?</p>
+  <div class="meta-row">
+    <span><b>1,578,583</b> barras M5 (2005-2026)</span>
+    <span><b>6</b> folds walk-forward</span>
+    <span><b>4</b> familias de modelo</span>
+    <span>target: retorno forward <b>12 velas</b> (~1h)</span>
+  </div>
+</header>
+
+<section id="verdict">
+  <div class="verdict-box">
+    <p class="verdict-title">Veredicto directo</p>
+    <p><b>Con el mejor modelo encontrado (LightGBM) y el feature set actual, 5% de riesgo fijo no sobrevive matemáticamente</b> — ni siquiera usando los quantiles reales predichos por el modelo en lugar del placeholder, ni filtrando solo las señales de mayor convicción. La fracción de riesgo que maximiza crecimiento geométrico llega como máximo a ~1.4% (en el 10% de señales más selectivas), muy lejos de 5%.</p>
+    <p>Esto no es un juicio contra tu elección de 5% — es lo que dice la evidencia sobre <i>este modelo específico</i> en <i>este horizonte específico</i>. La selectividad sí ayuda (el edge aritmético casi se cuadruplica al filtrar a las señales top 10%), pero no alcanza a cerrar la brecha. Las opciones reales desde acá: (1) buscar un edge genuinamente más fuerte — más features, otro horizonte, más cómputo para DL, ensamble, meta-labeling — antes de desplegar con 5%, o (2) aceptar un riesgo fijo mucho menor para este modelo tal como está, o (3) algo que tú quieras evaluar que yo no haya considerado. Te lo digo directo, sin suavizarlo.</p>
+  </div>
+</section>
+
+<section id="key-findings">
+  <div class="section-head"><h2>Resumen</h2></div>
+  <div class="kf-grid">
+    <div class="kf-card">
+      <span class="tag confirmed">Ganador en precisión</span>
+      <div class="kf-title">LightGBM</div>
+      <div class="kf-body">Menor pinball loss promedio (0.000330) de las 4 familias — las features tabulares (volatilidad, sesión, contexto H1/H4) capturan más información condicional que GARCH o los modelos DL bajo este presupuesto de cómputo.</div>
+    </div>
+    <div class="kf-card">
+      <span class="tag confirmed">Ganador en calibración</span>
+      <div class="kf-title">GARCH(1,1)-skewt</div>
+      <div class="kf-body">Menor error de cobertura promedio (0.0070) — competitivo con LightGBM en precisión, y ~50x más rápido de ajustar. Buena opción para producción por su simplicidad.</div>
+    </div>
+    <div class="kf-card">
+      <span class="tag critical">Bajo presupuesto de cómputo</span>
+      <div class="kf-title">TCN y LSTM quedan atrás</div>
+      <div class="kf-body">Peor pinball loss Y peor calibración que ambos baselines, en este hardware (Apple M3, 8GB, sin GPU dedicada). No es un veredicto definitivo contra DL — más épocas/datos/cómputo podrían cambiarlo — pero bajo lo disponible en esta sesión, no ganan.</div>
+    </div>
+    <div class="kf-card">
+      <span class="tag critical">El hallazgo decisivo</span>
+      <div class="kf-title">5% de riesgo no sobrevive con este modelo</div>
+      <div class="kf-body">Con los quantiles reales de LightGBM reemplazando el placeholder, la fracción óptima de crecimiento geométrico es 0.5-0.7% — casi igual al baseline sin modelo (0.6%). Incluso filtrando al 10% de señales más selectivas, solo llega a ~1.4%.</div>
+    </div>
+  </div>
+</section>
+
+<section id="model-comparison">
+  <div class="section-head"><span class="section-num">01</span><h2>Comparación de modelos: precisión (pinball loss)</h2></div>
+  <p class="wide">Menor es mejor. Los 4 modelos predicen los mismos 5 quantiles del retorno forward de 12 velas, evaluados en los mismos 6 folds walk-forward (out-of-sample).</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Modelo</th><th>p05</th><th>p10</th><th>p50</th><th>p90</th><th>p95</th><th>Promedio</th><th></th></tr></thead>
+      <tbody><tr>
+            <td>LightGBM</td><td class="num">0.000202</td><td class="num">0.000316</td><td class="num">0.000627</td><td class="num">0.000307</td><td class="num">0.000196</td>
+            <td class="num"><b>0.000330</b></td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:64%"></div></div></td>
+        </tr>
+<tr>
+            <td>GARCH(1,1)-skewt</td><td class="num">0.000229</td><td class="num">0.000341</td><td class="num">0.000626</td><td class="num">0.000332</td><td class="num">0.000220</td>
+            <td class="num"><b>0.000350</b></td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:68%"></div></div></td>
+        </tr>
+<tr>
+            <td>LSTM</td><td class="num">0.000278</td><td class="num">0.000429</td><td class="num">0.000892</td><td class="num">0.000425</td><td class="num">0.000272</td>
+            <td class="num"><b>0.000459</b></td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:89%"></div></div></td>
+        </tr>
+<tr>
+            <td>TCN</td><td class="num">0.000390</td><td class="num">0.000572</td><td class="num">0.000956</td><td class="num">0.000388</td><td class="num">0.000264</td>
+            <td class="num"><b>0.000514</b></td>
+            <td><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div></td>
+        </tr></tbody>
+    </table>
+  </div>
+
+  <div class="section-head"><span class="section-num">02</span><h2>Comparación de modelos: calibración (|error de cobertura|)</h2></div>
+  <p class="wide">Menor es mejor. Mide qué tan cerca está la cobertura empírica del nivel nominal del quantile — un modelo puede tener buen pinball loss y aun así estar mal calibrado en las colas.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Modelo</th><th>p05</th><th>p10</th><th>p50</th><th>p90</th><th>p95</th><th>Promedio</th><th></th></tr></thead>
+      <tbody><tr>
+            <td>LightGBM</td><td class="num">0.0076</td><td class="num">0.0075</td><td class="num">0.0098</td><td class="num">0.0141</td><td class="num">0.0134</td>
+            <td class="num"><b>0.0105</b></td>
+            <td><div class="bar-track"><div class="bar-fill warn" style="width:11%"></div></div></td>
+        </tr>
+<tr>
+            <td>GARCH(1,1)-skewt</td><td class="num">0.0046</td><td class="num">0.0046</td><td class="num">0.0116</td><td class="num">0.0088</td><td class="num">0.0053</td>
+            <td class="num"><b>0.0070</b></td>
+            <td><div class="bar-track"><div class="bar-fill warn" style="width:7%"></div></div></td>
+        </tr>
+<tr>
+            <td>LSTM</td><td class="num">0.0314</td><td class="num">0.0743</td><td class="num">0.2714</td><td class="num">0.0801</td><td class="num">0.0317</td>
+            <td class="num"><b>0.0978</b></td>
+            <td><div class="bar-track"><div class="bar-fill warn" style="width:100%"></div></div></td>
+        </tr>
+<tr>
+            <td>TCN</td><td class="num">0.0389</td><td class="num">0.0709</td><td class="num">0.2314</td><td class="num">0.0449</td><td class="num">0.0339</td>
+            <td class="num"><b>0.0840</b></td>
+            <td><div class="bar-track"><div class="bar-fill warn" style="width:86%"></div></div></td>
+        </tr></tbody>
+    </table>
+  </div>
+</section>
+
+<section id="risk-backtest">
+  <div class="section-head"><span class="section-num">03</span><h2>La prueba de riesgo: ¿sobrevive el 5%?</h2></div>
+  <p class="wide">Metodología: simulación de trades secuenciales (no solapados, una posición a la vez) usando SL basado en ATR y TP basado en el quantile predicho. Se mide la fracción de riesgo fijo que maximiza el crecimiento geométrico compuesto — no el retorno promedio por trade, que puede ser engañoso bajo apuestas de fracción fija (efecto Kelly).</p>
+
+  <h3>Baseline sin modelo (entrada ciega en cada barra válida)</h3>
+  <div class="finding critical" style="border-left-color:var(--critical)">
+    <b>105,043 trades, SL=64.0% / TP=29.9% / timeout=6.1%</b>
+    <p>E[R] aritmético = +0.0136 (edge positivo) pero fracción óptima de crecimiento = <b class="num">0.60%</b>. A 5% de riesgo: crecimiento geométrico negativo = ruina garantizada a largo plazo, a pesar del edge aritmético positivo (sobre-apalancamiento clásico tipo Kelly).</p>
+  </div>
+
+  <h3>Con quantiles reales de LightGBM + filtro de convicción</h3>
+  <p class="wide">¿Mejora si en vez de entrar en cada barra, filtramos solo las señales donde el modelo predice el movimiento más grande relativo al ATR (mayor "convicción")?</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Filtro</th><th>N trades</th><th>SL%</th><th>TP%</th><th>E[R]</th><th>Fracción óptima</th><th>vs. objetivo 5%</th></tr></thead>
+      <tbody><tr>
+            <td>top 100%</td>
+            <td class="num">72,388</td>
+            <td class="num">63.0%</td>
+            <td class="num">34.7%</td>
+            <td class="num">0.0098</td>
+            <td class="num"><b>0.50%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:10.0%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td>top 50%</td>
+            <td class="num">41,350</td>
+            <td class="num">68.0%</td>
+            <td class="num">30.1%</td>
+            <td class="num">0.0203</td>
+            <td class="num"><b>0.90%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:17.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td>top 25%</td>
+            <td class="num">22,958</td>
+            <td class="num">71.4%</td>
+            <td class="num">27.3%</td>
+            <td class="num">0.0301</td>
+            <td class="num"><b>1.09%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:21.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td>top 10%</td>
+            <td class="num">9,563</td>
+            <td class="num">74.5%</td>
+            <td class="num">24.5%</td>
+            <td class="num">0.0460</td>
+            <td class="num"><b>1.44%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:28.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr>
+<tr>
+            <td>top 5%</td>
+            <td class="num">4,771</td>
+            <td class="num">76.4%</td>
+            <td class="num">22.6%</td>
+            <td class="num">0.0456</td>
+            <td class="num"><b>1.29%</b></td>
+            <td><div class="bar-track target"><div class="bar-fill accent" style="width:25.9%"></div><div class="target-marker" style="left:100%"></div></div></td>
+        </tr></tbody>
+    </table>
+  </div>
+  <div class="finding warn">
+    <b>La selectividad ayuda, pero no alcanza</b>
+    <p>El edge aritmético casi se cuadruplica (de +0.0098 a +0.0460) al filtrar al 10% más selectivo, y la fracción óptima mejora de 0.5% a 1.44% — pero incluso en el régimen más selectivo probado, se queda muy por debajo del 5% objetivo. La línea roja en la barra de arriba marca dónde estaría el 5% — ningún filtro probado la alcanza.</p>
+  </div>
+</section>
+
+<section id="next-steps">
+  <div class="section-head"><h2>Opciones reales desde acá</h2></div>
+  <ul class="impl-list">
+    <li><span class="arrow">→</span> Buscar un edge más fuerte antes de desplegar con 5%: más features (order flow, más contexto macro), otro horizonte de predicción, ensamble LightGBM+GARCH, o meta-labeling (un segundo modelo que filtre las señales del primero)</li>
+    <li><span class="arrow">→</span> Invertir más cómputo en TCN/LSTM (más épocas, sin el cap de ventanas, quizás en una máquina con GPU dedicada) — no se descarta que DL pueda cerrar la brecha con más recursos</li>
+    <li><span class="arrow">→</span> Aceptar un riesgo fijo menor (~1-1.5%) para este modelo tal como está, en vez de 5%</li>
+    <li><span class="arrow">→</span> Revisar el horizonte de 12 velas — un horizonte distinto podría cambiar el balance de hit-rate vs. captura</li>
+    <li><span class="arrow">→</span> Considerar si el objetivo "comerse todo el pastel" (TP en p90/p95) es la asimetría correcta, dado que el hit-rate real (25-35% con LightGBM) es más bajo que lo que un R:R más moderado permitiría</li>
+  </ul>
+</section>
+
+<footer>
+  XAUUSD DL Forecast — comparación final generada 2026-08-19 · 4 modelos, 6 folds walk-forward, 1,578,583 barras M5
+</footer>
+
+</div>
