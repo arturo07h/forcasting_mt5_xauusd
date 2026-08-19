@@ -8,7 +8,12 @@ Protocol (files live in the MT5 terminal's MQL5/Files/ folder — set MQL5_FILES
 below to the real path before running):
   IN  (from EA, refreshed every new H1 bar close):
     xauusd_h1_bars.csv, xauusd_h4_bars.csv, xauusd_d1_bars.csv
-      columns: time,bid_open,bid_high,bid_low,bid_close,ask_open,ask_high,ask_low,ask_close
+      columns: time,open,high,low,close,spread_price
+      (MT5's native CopyRates is a single, bid-convention OHLC series, not true bid+ask
+      OHLC like the Dukascopy training data — spread_price, from each bar's own spread
+      field, is used to approximate ask_* = native_* + spread_price for every OHLC point,
+      not just the close, where the true value is known. A documented approximation, not
+      a precision issue: spread is ~0.02% of price, so this barely moves any feature.)
   OUT (to EA):
     xauusd_h1_signal.json
       {"bar_time": "...", "action": "BUY"|"NONE", "sl_price": ..., "tp_price": ...,
@@ -65,8 +70,15 @@ def load_history_base() -> pd.DataFrame:
 
 
 def load_mql5_bars(path: Path) -> pd.DataFrame:
+    """Expands the EA's simple (open,high,low,close,spread_price) export into the same
+    8-column bid/ask schema the Dukascopy history uses, via bid=native, ask=native+spread
+    — see the module docstring for why this is a fine approximation.
+    """
     df = pd.read_csv(path)
     df["time"] = pd.to_datetime(df["time"], utc=True)
+    for c in ["open", "high", "low", "close"]:
+        df[f"bid_{c}"] = df[c]
+        df[f"ask_{c}"] = df[c] + df["spread_price"]
     return df.sort_values("time").reset_index(drop=True)
 
 
