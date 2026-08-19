@@ -15,9 +15,9 @@ below to the real path before running):
       not just the close, where the true value is known. A documented approximation, not
       a precision issue: spread is ~0.02% of price, so this barely moves any feature.)
   OUT (to EA):
-    xauusd_h1_signal.json
-      {"bar_time": "...", "action": "BUY"|"NONE", "sl_price": ..., "tp_price": ...,
-       "computed_at": "...", "meta_proba": ..., "pred_tp_return": ...}
+    xauusd_h1_signal.csv — plain CSV, not JSON (MQL5 has no built-in JSON parser):
+      header: bar_time_unix,action,sl_price,tp_price,meta_proba,pred_tp_return,computed_at_unix
+      one data row, action is "BUY" or "NONE"
 
 The EA only acts on a signal whose bar_time matches the bar it just closed — anything
 older is treated as stale (service not running / lagging) and ignored, never traded on.
@@ -26,7 +26,6 @@ Run continuously: ./.venv/bin/python3 mql5/inference_service/live_inference.py
 """
 import sys
 import time
-import json
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -207,14 +206,21 @@ def main():
             sl_price = entry - SL_ATR_MULT * row["atr_14_raw"]
             tp_price = entry * (1 + pred_tp_return)
 
-        signal = {
-            "bar_time": str(latest_bar_time), "action": action,
-            "sl_price": sl_price, "tp_price": tp_price,
-            "meta_proba": meta_proba, "pred_tp_return": pred_tp_return,
-            "computed_at": datetime.now(timezone.utc).isoformat(),
-        }
-        signal_path = MQL5_FILES_DIR / "xauusd_h1_signal.json"
-        signal_path.write_text(json.dumps(signal, indent=2))
+        # plain CSV, not JSON — MQL5 has no built-in JSON parser, and hand-rolling one
+        # for the bridge is unnecessary risk when a single delimited line does the job
+        bar_time_unix = int(pd.Timestamp(latest_bar_time).timestamp())
+        computed_at_unix = int(datetime.now(timezone.utc).timestamp())
+        fields = [
+            str(bar_time_unix), action,
+            f"{sl_price:.5f}" if sl_price is not None else "",
+            f"{tp_price:.5f}" if tp_price is not None else "",
+            f"{meta_proba:.6f}", f"{pred_tp_return:.6f}", str(computed_at_unix),
+        ]
+        signal_path = MQL5_FILES_DIR / "xauusd_h1_signal.csv"
+        signal_path.write_text(
+            "bar_time_unix,action,sl_price,tp_price,meta_proba,pred_tp_return,computed_at_unix\n"
+            + ",".join(fields) + "\n"
+        )
         print(f"  -> {action}  meta_proba={meta_proba:.3f}  pred_tp_return={pred_tp_return:.4f}")
 
         last_processed_bar_time = latest_bar_time
